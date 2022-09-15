@@ -1,0 +1,40 @@
+
+resource "aws_instance" "linux" {
+  ami                         = var.ami_amzn
+  instance_type               = var.instance_size_devops
+  key_name                    = var.standard_key
+  subnet_id                   = "${random_shuffle.internal_subnets.result[0]}"
+  vpc_security_group_ids      = ["${aws_security_group.all_internal.id}"]
+  user_data                   = base64encode(file("${path.module}/user-data/linux_victim.sh"))
+  iam_instance_profile        = "${aws_iam_instance_profile.instance_profile.name}"
+  associate_public_ip_address = "false"
+  count                       = "${var.linux_count ? 1 : 0}"
+
+  root_block_device {
+    volume_size = "400"
+  }
+
+  #depends_on = ["aws_codecommit_repository.melon", "aws_codecommit_repository.grapefruit", "aws_ecr_repository.grapefruit", "aws_ecr_repository.grapefruit"]
+
+  tags = {
+    Name                  = "linux.bryceinternal.com"
+    clone                 = "${var.name}"
+    monaco_linux_attacker = "yes"
+    project               = "monaco"
+    #shutdown              = "nightly"
+	answer				  = "ctf-flag"
+    gitlab_code           = "${var.code}"
+    monaco                = "${var.name}"
+  }
+}
+resource "aws_route53_record" "linux" {
+  zone_id = module.dns.private_r53_zone_id
+  name    = "linux"
+  type    = "A"
+  ttl     = "30"
+  count   = "${var.linux_count ? 1 : 0}"
+
+  records = [
+    aws_instance.linux[count.index].private_ip,
+  ]
+}

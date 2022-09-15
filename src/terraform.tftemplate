@@ -1,0 +1,26 @@
+provider "aws" {
+  region      = "ap-southeast-1"
+  max_retries = "10"
+}
+
+module "VARNAME" {
+  source             = "./cctf"
+  name               = "monaco-VARNAME"
+  environment        = "prod"
+  public_r53_zone_id = "Z02751071Z0LOO5YSI6DN"
+  public_domain      = "cloudone-india.com"
+  code               = "VARNAME"
+  dsm_count          = "0"
+  devops_count       = "1"
+  jenkins_count      = "1"
+  victim_count       = "1"
+  attacker_count     = "1"
+  count              = "1"  #Set the count to 1 when you need to launch the workshop except for the Network Security 
+}
+
+module "NS-VARNAME" {
+source             = "./C1NS"
+count              = "0" #Set the count to 1 when you need to launch the Network Security workshop
+unique_id          = "ns-VARNAME"
+public_r53_zone_id = "Z02751071Z0LOO5YSI6DN" 
+}

@@ -1,0 +1,89 @@
+version: 2.1
+
+parameters:
+    action:
+      type: string
+      default: "apply"
+    labs:
+      type: integer
+      default: 1
+    Interval:
+      type: integer
+      default: 17
+    labprefix:
+      type: string
+      default: "test"
+
+references:
+
+base_image: &base_image
+  hashicorp/terraform:0.14.10
+
+working_directory: &working_directory
+  ~/monaco
+
+default_config: &default_config
+  docker:
+    - image: *base_image
+  parallelism: << pipeline.parameters.labs >>
+  working_directory: *working_directory
+
+jobs:
+  apply:
+    <<: *default_config
+    steps:
+      - checkout
+      - run:
+          name: Run Terraform
+          no_output_timeout: 50m
+          command: |
+            echo $CIRCLE_NODE_INDEX
+            echo << pipeline.parameters.Interval >>
+            SLEEP_TIME=`expr $CIRCLE_NODE_INDEX \* << pipeline.parameters.Interval >> + 1 `
+            echo $SLEEP_TIME
+            sleep $SLEEP_TIME
+            ls -l 
+            pwd
+            cd ~/monaco/src/
+            cp terraform.tftemplate variables.tf
+            sed -i -- "s/VARNAME/<< pipeline.parameters.labprefix >>-"$CIRCLE_NODE_INDEX"/g" variables.tf
+            cat variables.tf
+            terraform init 
+            terraform apply --auto-approve
+            terraform apply --auto-approve -refresh=false
+            terraform apply --auto-approve -refresh=false
+#  destroy:
+#    <<: *default_config
+#    steps:
+#      - checkout
+#      - run:
+#          name: Run Terraform
+#          no_output_timeout: 15m
+#          command: |
+#            echo $CIRCLE_NODE_INDEX
+#            ls -l 
+#            pwd
+#            cd ~/monaco/src/
+#            cp terraform.tftemplate variables.tf
+#            sed -i -- "s/VARNAME/<< pipeline.parameters.labprefix >>-"$CIRCLE_NODE_INDEX"/g" variables.tf
+#            cat variables.tf
+#            terraform init 
+#            terraform destroy --auto-approve
+#            terraform destroy --auto-approve -refresh=false
+#            terraform destroy --auto-approve -refresh=false
+
+
+workflows:
+  version: 2
+  monaco_builder:
+    jobs:
+      - hold_apply:
+          type: approval
+      - apply: 
+          requires:
+            - hold_apply
+#      - hold_destroy:
+#          type: approval
+#      - destroy: 
+#          requires:
+#            - hold_destroy
