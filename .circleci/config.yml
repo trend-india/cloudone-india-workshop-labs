@@ -12,7 +12,7 @@ parameters:
       default: 17
     labprefix:
       type: string
-      default: "test"
+      default: "testlokesh"
 
 references:
 
